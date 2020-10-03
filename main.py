@@ -33,6 +33,7 @@ class BotConfig:
         self.command_prefix = '/'
         self.token = ''
         self.debug = False
+        
         with open(self.configpath, 'r') as fp:
             cfg = load(fp)
             self.extensions = cfg['extensions']
@@ -44,14 +45,12 @@ class BotConfig:
 
     def save(self):
         with open(self.configpath, 'w') as fp:
-            cfg = {
-                "extensions": self.extensions,
-                "owner_id": self.owner_id,
-                "command_prefix": self.command_prefix,
-                "token": self.token,
-                "debug": self.debug
-            }
-            dump(cfg, fp)
+            cfg = load(fp)
+            self.extensions = cfg['extensions']
+            self.owner_id = cfg['owner_id']
+            self.command_prefix = cfg['command_prefix']
+            self.token = cfg['token']
+            self.debug = cfg['debug']
             fp.close()
 
 
