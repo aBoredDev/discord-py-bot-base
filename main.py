@@ -2,6 +2,17 @@ from discord.ext import commands
 import asyncio
 from pretty_help import PrettyHelp
 from json import load, dump
+from datetime import datetime
+
+
+def console_log(message, level: int = 0):
+    date = datetime.now()
+    if level == 0:
+        print(date.strftime('[%Y-$m-%d %H:%M:%S.%f UTC%z]'), '[INFO]', message)
+    elif level == 1:
+        print(date.strftime('[%Y-$m-%d %H:%M:%S.%f UTC%z]'), '[WARNING]', message)
+    elif level == 0:
+        print(date.strftime('[%Y-$m-%d %H:%M:%S.%f UTC%z]'), '[ERROR]', message)
 
 
 class BotConfig:
@@ -18,21 +29,34 @@ class BotConfig:
         self.owner_id = None
         self.command_prefix = '/'
         self.token = ''
+        self.debug = False
         with open(configpath, 'r') as fp:
             cfg = load(fp)
             self.extensions = cfg['extensions']
             self.owner_id = cfg['owner_id']
             self.command_prefix = cfg['command_prefix']
             self.token = cfg['token']
+            self.debug = cfg['debug']
             fp.close()
     
-    def save_config(self):
+    def reload(self):
+        with open(configpath, 'r') as fp:
+            cfg = load(fp)
+            self.extensions = cfg['extensions']
+            self.owner_id = cfg['owner_id']
+            self.command_prefix = cfg['command_prefix']
+            self.token = cfg['token']
+            self.debug = cfg['debug']
+            fp.close()
+
+    def save(self):
         with open(configpath, 'w') as fp:
             cfg = {
                 "extensions": self.extensions,
                 "owner_id": self.owner_id,
                 "command_prefix": self.command_prefix,
-                "token": self.token
+                "token": self.token,
+                "debug": self.debug
             }
             dump(cfg, fp)
             fp.close()
@@ -56,9 +80,28 @@ async def on_connect():
 
 @bot.event
 async def on_ready():
-    print('Bot ready!')
-    bot.load_extension('commands.utility')
-    print('Extension commands.utility loaded')
+    console_log('Loading extensions...')
+    
+    for extension in config.extensions:
+        try:
+            bot.load_extension(extension['name'])
+        except ExtensionNotFound:
+            await ctx.send(':x: Extension \'' + extension['name'] +'\' could not be found!')
+            console_log('Extension\'' + extension['name'] + '\' could not be found', 1)
+        except ExtensionAlreadyLoaded:
+            await ctx.send(':x: Extension \'' + extension['name'] +'\' already loaded!')
+            console_log('Extension\'' + extension['name'] + '\' already loaded', 1)
+        except ExtensionFailed:
+            await ctx.send(':x: Extension \'' + extension['name'] +'\' failed during setup!')
+            console_log('Extension\'' + extension['name'] + '\' failed during setup', 2)
+            if config.debug:
+                raise
+        else:
+            await ctx.send(':white_check_mark: Extension \'' + extension['name'] +'\' loaded successfully!')
+            console_log('Extension\'' + extension['name'] + '\'loaded')
+    
+    console_log('Bot ready!')
+    print('\n==============================')
 
 
 # Extension management
@@ -75,13 +118,18 @@ async def load(ctx, extension: str):
         bot.load_extension(extension)
     except ExtensionNotFound:
         await ctx.send(':x: Extension \'' + extension +'\' could not be found!')
+        console_log('Extension\'' + extension + '\' could not be found', 1)
     except ExtensionAlreadyLoaded:
         await ctx.send(':x: Extension \'' + extension +'\' already loaded!')
+        console_log('Extension\'' + extension + '\' already loaded', 1)
     except ExtensionFailed:
         await ctx.send(':x: Extension \'' + extension +'\' failed during setup!')
+        console_log('Extension\'' + extension + '\' failed during setup', 2)
+        if config.debug:
+            raise
     else:
         await ctx.send(':white_check_mark: Extension \'' + extension +'\' loaded successfully!')
-        print('Extension', extension, 'loaded!')
+        console_log('Extension' + extension + 'loaded')
 
 @bot.command(hidden=True)
 @commands.check(check_owner)
@@ -96,9 +144,10 @@ async def unload(ctx, extension: str):
         bot.unload_extension(extension)
     except ExtensionNotLoaded:
         await ctx.send(':x: Extension \'' + extension +'\' was not loaded!')
+        console_log('Extension \'' + extension +'\' was not loaded', 1)
     else:
-        await ctx.send(':white_check_mark: Extension \'' + extension +'\' unloaded successfully!')
-        print('Extension', extension, 'unloaded')
+        await ctx.send(':white_check_mark: Extension \'' + extension + '\' unloaded successfully!')
+        console_log('Extension' + extension + 'unloaded')
 
 @bot.command(hidden=True)
 @commands.check(check_owner)
@@ -106,20 +155,30 @@ async def reload(ctx, extension: str):
     """Reloads the specified extension
 
     Args:
-        ctx (commands.Context): The invocation context
         extension (str): The name of the extension to reload
     """
     try:
         bot.reload_extension(extension)
     except ExtensionNotFound:
         await ctx.send(':x: Extension \'' + extension +'\' could not be found!')
+        console_log('Extension \'' + extension +'\' could not be found!', 1)
     except ExtensionNotLoaded:
         await ctx.send(':x: Extension \'' + extension +'\' was not loaded!')
+        console_log('Extension \'' + extension +'\' was not loaded!', 1)
     except ExtensionFailed:
         await ctx.send(':x: Extension \'' + extension +'\' failed during setup!')
+        console_log('Extension \'' + extension +'\' failed during setup', 2)
+        if config.debug:
+            raise
     else:
         await ctx.send(':white_check_mark: Extension \'' + extension +'\' reloaded successfully!')
-        print('Extension', extension, 'reloaded')
+        console_log('Extension' + extension + 'reloaded')
 
+@bot.command(hidden=True)
+@commands.check(check_owner)
+async def reloadcfg(ctx):
+    """Reloads the internal bot configuration object
+    """
+    config.reload()
 
 bot.run(config.token)
