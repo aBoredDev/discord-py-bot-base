@@ -2,6 +2,7 @@ from discord.ext import commands
 import asyncio
 from pretty_help import PrettyHelp
 from json import load, dump
+<<<<<<< HEAD
 from datetime import datetime, timezone
 
 
@@ -16,6 +17,19 @@ def console_log(message, level: int = 0):
         print(date.strftime('[%Y-%M-%d %H:%M:%S.%f UTC%z]'), '[WARNING]', message)
     elif level == 0:
         print(date.strftime('[%Y-%M-%d %H:%M:%S.%f UTC%z]'), '[ERROR]', message)
+=======
+from datetime import datetime
+
+
+def console_log(message, level: int = 0):
+    date = datetime.now()
+    if level == 0:
+        print(date.strftime('[%Y-$m-%d %H:%M:%S.%f UTC%z]'), '[INFO]', message)
+    elif level == 1:
+        print(date.strftime('[%Y-$m-%d %H:%M:%S.%f UTC%z]'), '[WARNING]', message)
+    elif level == 0:
+        print(date.strftime('[%Y-$m-%d %H:%M:%S.%f UTC%z]'), '[ERROR]', message)
+>>>>>>> f6ae6a313242957233657f682543067e8739d02f
 
 
 class BotConfig:
@@ -33,7 +47,26 @@ class BotConfig:
         self.command_prefix = '/'
         self.token = ''
         self.debug = False
+<<<<<<< HEAD
         with open(self.configpath, 'r') as fp:
+=======
+        with open(configpath, 'r') as fp:
+>>>>>>> f6ae6a313242957233657f682543067e8739d02f
+            cfg = load(fp)
+            self.extensions = cfg['extensions']
+            self.owner_id = cfg['owner_id']
+            self.command_prefix = cfg['command_prefix']
+            self.token = cfg['token']
+            self.debug = cfg['debug']
+            fp.close()
+<<<<<<< HEAD
+
+    def save(self):
+        with open(self.configpath, 'w') as fp:
+=======
+    
+    def reload(self):
+        with open(configpath, 'r') as fp:
             cfg = load(fp)
             self.extensions = cfg['extensions']
             self.owner_id = cfg['owner_id']
@@ -43,7 +76,8 @@ class BotConfig:
             fp.close()
 
     def save(self):
-        with open(self.configpath, 'w') as fp:
+        with open(configpath, 'w') as fp:
+>>>>>>> f6ae6a313242957233657f682543067e8739d02f
             cfg = {
                 "extensions": self.extensions,
                 "owner_id": self.owner_id,
@@ -165,8 +199,5 @@ async def reload(ctx, extension: str):
         await ctx.send(':white_check_mark: Extension \'' + extension +'\' reloaded successfully!')
         console_log('Extension' + extension + 'reloaded')
 
-    """Reloads the internal bot configuration object
-    """
-    config.reload()
 
 bot.run(config.token)
