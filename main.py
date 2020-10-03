@@ -165,8 +165,5 @@ async def reload(ctx, extension: str):
         await ctx.send(':white_check_mark: Extension \'' + extension +'\' reloaded successfully!')
         console_log('Extension' + extension + 'reloaded')
 
-    """Reloads the internal bot configuration object
-    """
-    config.reload()
 
 bot.run(config.token)
